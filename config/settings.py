@@ -205,3 +205,12 @@ FLIGHT_API_KEY = env("FLIGHT_API_KEY", default="")
 FLIGHT_API_USER = env("FLIGHT_API_USER", default="")
 FLIGHT_API_PASSWORD = env("FLIGHT_API_PASSWORD", default="")
 FLIGHT_API_TIMEOUT = env.float("FLIGHT_API_TIMEOUT", default=10.0)
+
+
+# Flight search endpoint access token (inbound auth)
+# The shared secret clients send as ``Authorization: Bearer <token>``. Distinct
+# from the outbound FLIGHT_API_* provider credentials above. Defaults to empty,
+# which fails closed: with no token configured, the endpoint rejects everyone.
+# Generate one with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+
+FLIGHT_SEARCH_ACCESS_TOKEN = env("FLIGHT_SEARCH_ACCESS_TOKEN", default="")
