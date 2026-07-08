@@ -63,6 +63,26 @@ class AirportRepository:
         logger.info("Upserted airports: %d created, %d updated", created, updated)
         return UpsertResult(created=created, updated=updated)
 
+    def get_active_by_iatas(self, iatas: list[str]) -> dict[str, AirportDTO]:
+        """Return active airports for the given IATA codes, keyed by code.
+
+        A single ``iata__in`` query filtered to ``is_active=True``. Codes that
+        are unknown or soft-deleted are simply absent from the result, leaving
+        the caller to decide how to treat a missing airport. Rows are mapped to
+        immutable :class:`AirportDTO` value objects so callers never touch the ORM.
+        """
+        rows = Airport.objects.filter(iata__in=iatas, is_active=True)
+        return {
+            row.iata: AirportDTO(
+                iata=row.iata,
+                city=row.city,
+                state=row.state,
+                lat=row.lat,
+                lon=row.lon,
+            )
+            for row in rows
+        }
+
     def deactivate_missing(self, active_iatas: list[str]) -> int:
         """Soft-delete airports absent from the payload by setting
         ``is_active=False``. Returns the number of rows deactivated.
