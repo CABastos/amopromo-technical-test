@@ -174,3 +174,16 @@ LOGGING = {
         },
     },
 }
+
+
+# External airports API (Problem 1 import source)
+# Credentials come from the environment; see .env.example for the variable names.
+
+AIRPORT_API_BASE_URL = env(
+    "AIRPORT_API_BASE_URL",
+    default="https://stub.amopromo.com/air/airports",
+)
+AIRPORT_API_KEY = env("AIRPORT_API_KEY", default="")
+AIRPORT_API_USER = env("AIRPORT_API_USER", default="")
+AIRPORT_API_PASSWORD = env("AIRPORT_API_PASSWORD", default="")
+AIRPORT_API_TIMEOUT = env.float("AIRPORT_API_TIMEOUT", default=10.0)
