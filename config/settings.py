@@ -190,3 +190,18 @@ AIRPORT_API_KEY = env("AIRPORT_API_KEY", default="")
 AIRPORT_API_USER = env("AIRPORT_API_USER", default="")
 AIRPORT_API_PASSWORD = env("AIRPORT_API_PASSWORD", default="")
 AIRPORT_API_TIMEOUT = env.float("AIRPORT_API_TIMEOUT", default=10.0)
+
+
+# Mock Airlines flight search API (Problem 2 provider)
+# Same Basic Auth credentials as the airports API but a distinct endpoint and
+# key. The provider searches a single date, so a round-trip search calls it
+# twice. Credentials come from the environment; see .env.example.
+
+FLIGHT_API_BASE_URL = env(
+    "FLIGHT_API_BASE_URL",
+    default="https://stub.amopromo.com/air/search",
+)
+FLIGHT_API_KEY = env("FLIGHT_API_KEY", default="")
+FLIGHT_API_USER = env("FLIGHT_API_USER", default="")
+FLIGHT_API_PASSWORD = env("FLIGHT_API_PASSWORD", default="")
+FLIGHT_API_TIMEOUT = env.float("FLIGHT_API_TIMEOUT", default=10.0)
