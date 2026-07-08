@@ -1,5 +1,6 @@
 # Core
 Django~=5.2
+djangorestframework~=3.16
 psycopg[binary]~=3.2
 requests~=2.32
 django-environ~=0.11
