@@ -1,0 +1,12 @@
+# Core
+Django~=5.2
+psycopg[binary]~=3.2
+requests~=2.32
+django-environ~=0.11
+
+# Testing
+pytest~=8.3
+pytest-django~=4.9
+
+# Tooling
+ruff~=0.8

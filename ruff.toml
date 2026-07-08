@@ -1,0 +1,22 @@
+target-version = "py313"
+line-length = 100
+
+exclude = [
+    ".git",
+    ".venv",
+    "**/migrations/*",
+]
+
+[lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "DJ",   # flake8-django
+]
+
+[format]
+quote-style = "double"
+indent-style = "space"
