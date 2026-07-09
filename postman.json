@@ -1,7 +1,7 @@
 {
   "info": {
     "_postman_id": "fc0940fa-66ef-43dd-830d-10ac19b78a17",
-    "name": "My Collection",
+    "name": "Caio Bastos - Amo Promo",
     "description": "### Welcome to Postman! This is your first collection. \n\nCollections are your starting point for building and testing APIs. You can use this one to:\n\n• Group related requests\n• Test your API in real-world scenarios\n• Document and share your requests\n\nUpdate the name and overview whenever you’re ready to make it yours.\n\n[Learn more about Postman Collections.](https://learning.postman.com/docs/collections/collections-overview/)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "56520322",
@@ -14,26 +14,53 @@
         {
           "listen": "test",
           "script": {
-            "type": "text/javascript",
             "exec": [
               "pm.test(\"Status code is 200\", function () {",
               "    pm.response.to.have.status(200);",
               "});"
-            ]
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
           }
         }
       ],
       "request": {
+        "auth": {
+          "type": "bearer"
+        },
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "postman-echo.com/get",
+          "raw": "http://localhost:8000/api/flights/search/?origin=GRU&destination=GIG&departure_date=2030-01-01&return_date=2030-01-05",
+          "protocol": "http",
           "host": [
-            "postman-echo",
-            "com"
+            "localhost"
           ],
+          "port": "8000",
           "path": [
-            "get"
+            "api",
+            "flights",
+            "search",
+            ""
+          ],
+          "query": [
+            {
+              "key": "origin",
+              "value": "GRU"
+            },
+            {
+              "key": "destination",
+              "value": "GIG"
+            },
+            {
+              "key": "departure_date",
+              "value": "2030-01-01"
+            },
+            {
+              "key": "return_date",
+              "value": "2030-01-05"
+            }
           ]
         },
         "description": "This is a GET request and it is used to \"get\" data from an endpoint. There is no request body for a GET request, but you can use query parameters to help specify the resource you want data on (e.g., in this request, we have `id=1`).\n\nA successful GET response will have a `200 OK` status, and should include some kind of response body - for example, HTML web content or JSON data."
