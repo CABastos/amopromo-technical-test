@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from flight.helpers import parse_datetime
+
 # The provider populates only ``fare``; the fee (and everything derived from it)
 # is ours to compute. A booking fee is 10% of the fare with a R$40 floor.
 _FEE_RATE = 0.10
@@ -49,8 +51,8 @@ class FlightOptionDTO:
         if distance_km <= 0:
             raise ValueError(f"distance_km must be positive, got {distance_km}")
 
-        departure = cls._parse_datetime(raw.get("departure_time"), "departure_time")
-        arrival = cls._parse_datetime(raw.get("arrival_time"), "arrival_time")
+        departure = parse_datetime(raw.get("departure_time"), "departure_time")
+        arrival = parse_datetime(raw.get("arrival_time"), "arrival_time")
         if arrival <= departure:
             raise ValueError("arrival_time must be after departure_time")
 
@@ -82,12 +84,3 @@ class FlightOptionDTO:
             cruise_speed_kmh=round(distance_km / duration_hours, 2),
             cost_per_km=round(fare / distance_km, 2),
         )
-
-    @staticmethod
-    def _parse_datetime(value: object, field: str) -> datetime:
-        if isinstance(value, datetime):
-            return value
-        try:
-            return datetime.fromisoformat(str(value))
-        except ValueError as exc:
-            raise ValueError(f"invalid {field} {value!r}: {exc}") from exc

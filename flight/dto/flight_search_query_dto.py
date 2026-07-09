@@ -2,6 +2,8 @@ import re
 from dataclasses import dataclass
 from datetime import date
 
+from flight.helpers import parse_date
+
 _IATA_RE = re.compile(r"^[A-Z]{3}$")
 
 
@@ -49,8 +51,8 @@ class FlightSearchQuery:
         if origin_code == destination_code:
             raise ValueError("origin and destination must be different airports")
 
-        departure = cls._parse_date(departure_date, "departure_date")
-        returning = cls._parse_date(return_date, "return_date")
+        departure = parse_date(departure_date, "departure_date")
+        returning = parse_date(return_date, "return_date")
         if departure < today:
             raise ValueError(f"departure_date {departure.isoformat()} is in the past")
         if returning < departure:
@@ -69,12 +71,3 @@ class FlightSearchQuery:
         if not _IATA_RE.match(code):
             raise ValueError(f"invalid {field} IATA code {value!r}")
         return code
-
-    @staticmethod
-    def _parse_date(value: object, field: str) -> date:
-        if isinstance(value, date):
-            return value
-        try:
-            return date.fromisoformat(str(value))
-        except ValueError as exc:
-            raise ValueError(f"invalid {field} {value!r}: {exc}") from exc
