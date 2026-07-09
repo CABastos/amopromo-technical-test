@@ -216,13 +216,21 @@ amopromo-technical-test/
 │   ├── usecases/              # UpsertAirportsUseCase (orchestration)
 │   ├── management/commands/   # import_airports (job)
 │   └── tests/                 # use case + DTO unit tests
-└── flight/                    # Problem 2 — read-only, no models
-    ├── api/                   # auth, serializer, view (DRF delivery)
-    ├── dto/                   # query, enriched leg, round-trip aggregation
-    ├── helpers/               # haversine distance
-    ├── services/              # MockAirlinesApiService (HTTP)
-    ├── usecases/              # SearchRoundTripUseCase (orchestration)
-    └── tests/                 # DTO, helper, and use case unit tests
+├── flight/                    # Problem 2 — read-only, no models
+│   ├── api/                   # auth, serializer, view (DRF delivery)
+│   ├── dto/                   # query, enriched leg, round-trip aggregation
+│   ├── helpers/               # haversine distance
+│   ├── services/              # MockAirlinesApiService (HTTP)
+│   ├── usecases/              # SearchRoundTripUseCase (orchestration)
+│   └── tests/                 # DTO, helper, and use case unit tests
+└── applog/                    # cross-cutting — persists airport/flight logs
+    ├── migrations/
+    ├── models/                # AppLogEntry ORM model
+    ├── repositories/          # AppLogRepository (persistence)
+    ├── handlers/              # DatabaseLogHandler (logging.Handler)
+    ├── management/commands/   # purge_logs (retention job)
+    ├── admin.py               # read-only log viewer
+    └── tests/                 # handler, repository, admin tests
 ```
 
 ## Data model
@@ -239,6 +247,20 @@ amopromo-technical-test/
 | `is_active` | BooleanField | soft-delete flag (default `True`) |
 | `created_at` | DateTimeField | `auto_now_add` |
 | `updated_at` | DateTimeField | `auto_now` |
+
+`AppLogEntry` (table `applog_applogentry`) — see [Log storage](#log-storage):
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | BigAutoField | surrogate primary key |
+| `logger_name` | CharField(255) | e.g. `flight.services.mock_airlines_api_service` (indexed) |
+| `level` | PositiveSmallIntegerField | numeric level (20, 30, 40…) (indexed) |
+| `level_name` | CharField(10) | `INFO`, `WARNING`, `ERROR`, … |
+| `message` | TextField | fully interpolated message |
+| `func_name` | CharField(255) | originating function |
+| `lineno` | PositiveIntegerField | originating line number |
+| `traceback` | TextField | formatted exception, empty when none |
+| `created_at` | DateTimeField | `auto_now_add` (indexed) — rows are immutable |
 
 ## Setup
 
@@ -327,6 +349,39 @@ curl -H "Authorization: Bearer $FLIGHT_SEARCH_ACCESS_TOKEN" \
 `FLIGHT_SEARCH_ACCESS_TOKEN` fails closed: with no token configured, the
 endpoint rejects every request with `401`.
 
+## Log storage
+
+Application logs from the `airport.*` and `flight.*` loggers are persisted to
+the `app_log_entry` table (the `applog` app) in addition to the console. This is
+handled by a custom `logging.Handler` wired into `LOGGING` in `config/settings.py`
+and attached to those two loggers, so the existing `logging.getLogger(__name__)`
+calls flow into the database with no change to the app code. Console output is
+unchanged — each record is printed once and stored once.
+
+Toggle it with `LOG_STORAGE_ENABLED` in `.env` (default `True`); when off, the
+logging config is identical to console-only. The test suite forces it off so the
+unit tests stay database-free.
+
+View stored logs in the Django admin (read-only, filterable by level and logger,
+searchable, with a date drill-down):
+
+```bash
+python manage.py createsuperuser
+python manage.py runserver
+# then open http://localhost:8000/admin/ and select "App log entries"
+```
+
+Retention is a separate cron-friendly command — delete entries older than N days
+(default 30):
+
+```bash
+python manage.py purge_logs --days 30
+```
+
+The handler writes one row synchronously per record and never raises: a database
+failure degrades to a dropped log row, never a failed request or import. At
+higher volume the natural evolution is batched or asynchronous writes.
+
 ## Tests and linting
 
 ```bash
@@ -337,7 +392,11 @@ ruff format .         # format
 
 The unit tests (DTOs, the haversine helper, and both use cases) run on in-memory
 fakes — and, for the import, an injected transaction boundary — so they need
-neither PostgreSQL nor the external APIs.
+neither PostgreSQL nor the external APIs. The one exception is
+`applog/tests/test_app_log_repository.py`, which exercises real ORM writes and is
+marked `@pytest.mark.django_db`; it needs the docker-compose Postgres running
+(`docker compose up -d`). Everything else, including the log handler and admin
+tests, stays database-free.
 
 ## Scheduling (daily import)
 
