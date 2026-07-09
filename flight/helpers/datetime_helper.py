@@ -1,8 +1,5 @@
 from collections.abc import Callable
 from datetime import date, datetime
-from typing import TypeVar
-
-_T = TypeVar("_T", date, datetime)
 
 
 def parse_date(value: object, field: str) -> date:
@@ -31,7 +28,9 @@ def parse_datetime(value: object, field: str) -> datetime:
     return _parse(value, field, datetime, datetime.fromisoformat)
 
 
-def _parse(value: object, field: str, expected_type: type[_T], parser: Callable[[str], _T]) -> _T:
+def _parse[T: (date, datetime)](
+    value: object, field: str, expected_type: type[T], parser: Callable[[str], T]
+) -> T:
     if isinstance(value, expected_type):
         return value
     try:

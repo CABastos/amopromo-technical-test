@@ -4,7 +4,6 @@ import pytest
 
 from flight.helpers import parse_date, parse_datetime
 
-
 # --- parse_date -------------------------------------------------------------
 
 
@@ -52,9 +51,7 @@ def test_parse_date_error_names_the_field_and_value():
 
 
 def test_parse_datetime_parses_iso_string():
-    assert parse_datetime("2026-07-10T08:30:00", "departure_time") == datetime(
-        2026, 7, 10, 8, 30
-    )
+    assert parse_datetime("2026-07-10T08:30:00", "departure_time") == datetime(2026, 7, 10, 8, 30)
 
 
 def test_parse_datetime_passes_through_datetime_object():
