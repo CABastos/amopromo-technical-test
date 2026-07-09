@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     # Local apps
     "airport",
     "flight",
+    "applog",
 ]
 
 MIDDLEWARE = [
