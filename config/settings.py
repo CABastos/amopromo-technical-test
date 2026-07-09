@@ -23,6 +23,7 @@ env = environ.Env(
     DEBUG=(bool, False),
     ALLOWED_HOSTS=(list, []),
     LOG_LEVEL=(str, "INFO"),
+    LOG_STORAGE_ENABLED=(bool, True),
 )
 environ.Env.read_env(BASE_DIR / ".env")
 
@@ -178,6 +179,19 @@ LOGGING = {
         },
     },
 }
+
+# When enabled, application logs are also persisted to the app_log_entry table
+# (see the applog app). The handler is referenced by dotted path and is
+# instantiated lazily by logging.config, so it must not be imported here. The
+# airport/flight loggers carry only db_log and propagate to the root console
+# handler, so each record is stored once and printed once — adding "console"
+# here would double-print. Omitting "level" lets them inherit root's LOG_LEVEL,
+# keeping a single source of truth. When disabled, LOGGING is unchanged.
+LOG_STORAGE_ENABLED = env("LOG_STORAGE_ENABLED")
+if LOG_STORAGE_ENABLED:
+    LOGGING["handlers"]["db_log"] = {"class": "applog.handlers.DatabaseLogHandler"}
+    LOGGING["loggers"]["airport"] = {"handlers": ["db_log"], "propagate": True}
+    LOGGING["loggers"]["flight"] = {"handlers": ["db_log"], "propagate": True}
 
 
 # External airports API (Problem 1 import source)
