@@ -1,7 +1,7 @@
-import re
 from dataclasses import dataclass
 
-_IATA_RE = re.compile(r"^[A-Z]{3}$")
+from airport.helpers import parse_iata
+
 _LAT_RANGE = (-90.0, 90.0)
 _LON_RANGE = (-180.0, 180.0)
 
@@ -33,9 +33,7 @@ class AirportDTO:
             ValueError: with a human-readable reason for any invalid or missing
                 field, so callers can skip the record and log why.
         """
-        iata = str(code).strip().upper()
-        if not _IATA_RE.match(iata):
-            raise ValueError(f"invalid IATA code {code!r}")
+        iata = parse_iata(code)
 
         if not isinstance(raw, dict):
             raise ValueError("record is not an object")

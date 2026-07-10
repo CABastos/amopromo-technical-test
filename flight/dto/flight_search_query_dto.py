@@ -1,10 +1,8 @@
-import re
 from dataclasses import dataclass
 from datetime import date
 
+from airport.helpers import parse_iata
 from flight.helpers import parse_date
-
-_IATA_RE = re.compile(r"^[A-Z]{3}$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,8 +44,8 @@ class FlightSearchQuery:
         """
         today = today if today is not None else date.today()
 
-        origin_code = cls._parse_iata(origin, "origin")
-        destination_code = cls._parse_iata(destination, "destination")
+        origin_code = parse_iata(origin, "origin IATA code")
+        destination_code = parse_iata(destination, "destination IATA code")
         if origin_code == destination_code:
             raise ValueError("origin and destination must be different airports")
 
@@ -64,10 +62,3 @@ class FlightSearchQuery:
             departure_date=departure,
             return_date=returning,
         )
-
-    @staticmethod
-    def _parse_iata(value: object, field: str) -> str:
-        code = str(value).strip().upper()
-        if not _IATA_RE.match(code):
-            raise ValueError(f"invalid {field} IATA code {value!r}")
-        return code
