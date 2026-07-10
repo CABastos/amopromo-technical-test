@@ -14,8 +14,8 @@ def _leg(fare, distance_km=300.0):
 
 
 def test_combine_sums_leg_price_fields():
-    outbound = _leg(500.0)  # fee 50 (10% > floor), total 550
-    inbound = _leg(300.0)  # fee 40 (10% of 300 = 30 < floor), total 340
+    outbound = _leg(500.0)
+    inbound = _leg(300.0)
 
     rt = RoundTripOptionDTO.combine(outbound, inbound)
 
@@ -28,10 +28,8 @@ def test_combine_sums_leg_price_fields():
 
 
 def test_combine_keeps_both_leg_floors_without_repricing():
-    # Both legs sit on the 40 floor; the combined fee must be 80, not a
-    # re-priced max(300 * 0.10, 40) = 40.
-    outbound = _leg(100.0)  # 10% = 10 < 40 -> fee 40
-    inbound = _leg(200.0)  # 10% = 20 < 40 -> fee 40
+    outbound = _leg(100.0)
+    inbound = _leg(200.0)
 
     rt = RoundTripOptionDTO.combine(outbound, inbound)
 
@@ -43,9 +41,8 @@ def test_combine_keeps_both_leg_floors_without_repricing():
 
 
 def test_combine_rounds_to_two_decimals():
-    # 100.10 + 200.20 is 300.29999999999995 in float; combine must round it.
-    outbound = _leg(100.10)  # fee 40, total 140.10
-    inbound = _leg(200.20)  # fee 40, total 240.20
+    outbound = _leg(100.10)
+    inbound = _leg(200.20)
 
     rt = RoundTripOptionDTO.combine(outbound, inbound)
 

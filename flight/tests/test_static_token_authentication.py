@@ -17,8 +17,6 @@ def test_no_header_returns_none():
 
 
 def test_whitespace_only_header_returns_none():
-    # Regression: a present-but-whitespace header must be treated as "no
-    # credential" (-> None -> 401), not crash with IndexError (-> 500).
     assert _authenticate("   ") is None
 
 
@@ -29,7 +27,7 @@ def test_non_bearer_scheme_returns_none():
 def test_malformed_bearer_raises(settings):
     settings.FLIGHT_SEARCH_ACCESS_TOKEN = "secret"
     with pytest.raises(exceptions.AuthenticationFailed):
-        _authenticate("Bearer")  # scheme present, token missing
+        _authenticate("Bearer")
 
 
 def test_wrong_token_raises(settings):

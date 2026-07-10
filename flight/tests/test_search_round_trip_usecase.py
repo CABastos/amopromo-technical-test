@@ -7,7 +7,6 @@ from flight.dto import FlightSearchQuery
 from flight.services import MockAirlinesApiError
 from flight.usecases import SearchRoundTripUseCase, UnknownAirportError
 
-# Real-ish coordinates; the GRU<->GIG great-circle distance is roughly 338 km.
 GRU = AirportDTO(iata="GRU", city="Sao Paulo", state="SP", lat=-23.435, lon=-46.473)
 GIG = AirportDTO(iata="GIG", city="Rio de Janeiro", state="RJ", lat=-22.810, lon=-43.251)
 TODAY = date(2026, 7, 1)
@@ -66,21 +65,17 @@ def _both_airports():
 
 
 def test_execute_builds_sorted_round_trip_combinations():
-    # Outbound totals: 300 -> 340 (fee floored to 40), 500 -> 550.
-    # Inbound totals: 400 -> 440, 1000 -> 1100.
     outbound = _payload([_option(500.0), _option(300.0)])
     inbound = _payload([_option(400.0), _option(1000.0)])
     service = FakeMockAirlinesApiService(payloads=[outbound, inbound])
 
     result = _use_case(service, _both_airports()).execute(_query())
 
-    # 2 x 2 combinations, ascending by total: 780, 990, 1440, 1650.
     assert [option.total for option in result.options] == [780.0, 990.0, 1440.0, 1650.0]
     assert result.origin.iata == "GRU"
     assert result.destination.iata == "GIG"
     assert result.currency == "BRL"
     assert result.range_km == pytest.approx(338, rel=0.02)
-    # The cheapest combo pairs the cheapest legs (out 340 + in 440).
     cheapest = result.options[0]
     assert cheapest.outbound.total == 340.0
     assert cheapest.inbound.total == 440.0
@@ -97,7 +92,7 @@ def test_execute_calls_provider_with_swapped_airports_for_return_leg():
 
 def test_execute_raises_for_unknown_airport_without_calling_provider():
     service = FakeMockAirlinesApiService(payloads=[])
-    repository = FakeAirportRepository({"GRU": GRU})  # GIG is unknown
+    repository = FakeAirportRepository({"GRU": GRU})
 
     with pytest.raises(UnknownAirportError):
         _use_case(service, repository).execute(_query())
@@ -106,7 +101,6 @@ def test_execute_raises_for_unknown_airport_without_calling_provider():
 
 
 def test_execute_skips_invalid_options():
-    # Second outbound option has a non-positive fare and is dropped.
     outbound = _payload([_option(500.0), _option(-1.0)])
     inbound = _payload([_option(400.0)])
     service = FakeMockAirlinesApiService(payloads=[outbound, inbound])
@@ -114,7 +108,7 @@ def test_execute_skips_invalid_options():
     result = _use_case(service, _both_airports()).execute(_query())
 
     assert len(result.options) == 1
-    assert result.options[0].total == 990.0  # 550 + 440
+    assert result.options[0].total == 990.0
 
 
 def test_execute_returns_no_options_when_a_leg_is_empty():

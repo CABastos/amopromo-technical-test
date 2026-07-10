@@ -7,12 +7,7 @@ _SCHEME = "Bearer"
 
 
 class StaticTokenUser:
-    """Minimal authenticated principal for a valid static token.
-
-    The flight API has no user model — a correct token is all it needs — so a
-    request carrying the token is represented by this single anonymous-but-
-    authenticated user. Only ``is_authenticated`` matters to ``IsAuthenticated``.
-    """
+    """Minimal authenticated principal for a valid static token."""
 
     is_authenticated = True
 
@@ -21,30 +16,17 @@ class StaticTokenUser:
 
 
 class StaticTokenAuthentication(authentication.BaseAuthentication):
-    """Authenticate requests by a shared secret in the ``Authorization`` header.
-
-    The header must read ``Authorization: Bearer <token>`` and ``<token>`` must
-    equal ``settings.FLIGHT_SEARCH_ACCESS_TOKEN`` (compared in constant time).
-
-    Following DRF's contract: a *missing* credential (no header, or a different
-    scheme) returns ``None`` so the request continues unauthenticated and
-    ``IsAuthenticated`` produces a 401, while a *malformed or wrong* Bearer
-    credential raises ``AuthenticationFailed``. An empty configured token fails
-    closed: no request can ever authenticate.
-    """
+    """Authenticate requests by a shared secret in the Authorization header."""
 
     keyword = _SCHEME
 
     def authenticate(self, request):
-        # Work in bytes throughout so an arbitrary header value can never raise
-        # (e.g. hmac.compare_digest rejects non-ASCII ``str``).
         header = authentication.get_authorization_header(request)
         if not header:
             return None
 
         parts = header.split()
         if not parts:
-            # A present-but-whitespace-only header carries no credential.
             return None
         if parts[0].lower() != self.keyword.encode().lower():
             return None
@@ -58,5 +40,4 @@ class StaticTokenAuthentication(authentication.BaseAuthentication):
         return (StaticTokenUser(), parts[1].decode("latin-1"))
 
     def authenticate_header(self, request) -> str:
-        # Drives the WWW-Authenticate challenge on 401 responses.
         return self.keyword

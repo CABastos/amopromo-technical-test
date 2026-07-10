@@ -42,9 +42,6 @@ def _option(
     )
 
 
-# --- _serialize_airport -----------------------------------------------------
-
-
 def test_serialize_airport_maps_all_fields():
     assert _serialize_airport(GRU) == {
         "iata": "GRU",
@@ -55,19 +52,12 @@ def test_serialize_airport_maps_all_fields():
     }
 
 
-# --- _serialize_price -------------------------------------------------------
-
-
 def test_serialize_price_renames_fee_to_fees():
-    # The provider's contract name is ``fees`` (plural); our DTO field is ``fee``.
     assert _serialize_price(100.0, 40.0, 140.0) == {
         "fare": 100.0,
         "fees": 40.0,
         "total": 140.0,
     }
-
-
-# --- _serialize_flight ------------------------------------------------------
 
 
 def test_serialize_flight_maps_full_structure():
@@ -99,15 +89,10 @@ def test_serialize_flight_renders_timestamps_as_isoformat():
 
 
 def test_serialize_flight_exposes_range_under_meta_range_key():
-    # Per-flight distance is exposed as ``range`` (provider contract name),
-    # unlike the top-level summary which uses ``range_km``.
     serialized = _serialize_flight(_option(range_km=512.5))
 
     assert serialized["meta"]["range"] == 512.5
     assert "range_km" not in serialized["meta"]
-
-
-# --- _serialize_round_trip --------------------------------------------------
 
 
 def test_serialize_round_trip_uses_aggregate_price_and_nests_legs():
@@ -119,8 +104,6 @@ def test_serialize_round_trip_uses_aggregate_price_and_nests_legs():
         departure=datetime(2026, 7, 15, 18, 0),
         arrival=datetime(2026, 7, 15, 20, 0),
     )
-    # Aggregate fields deliberately distinct from the legs' sums to prove the
-    # presenter reads the round-trip's own price, not a re-derived total.
     round_trip = RoundTripOptionDTO(
         outbound=outbound, inbound=inbound, fare=210.0, fee=80.0, total=290.0
     )
@@ -130,9 +113,6 @@ def test_serialize_round_trip_uses_aggregate_price_and_nests_legs():
         "outbound": _serialize_flight(outbound),
         "inbound": _serialize_flight(inbound),
     }
-
-
-# --- _serialize_result ------------------------------------------------------
 
 
 def _result(options):

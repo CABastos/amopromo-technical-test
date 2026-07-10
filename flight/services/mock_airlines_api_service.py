@@ -9,24 +9,11 @@ logger = logging.getLogger(__name__)
 
 
 class MockAirlinesApiError(Exception):
-    """Raised when the Mock Airlines search API cannot be reached or returns an
-    unexpected response.
-
-    Callers depend on this domain exception rather than on ``requests``
-    internals, keeping the HTTP library an implementation detail of this layer.
-    The use case maps it to a 502 (bad gateway) at the delivery boundary.
-    """
+    """Raised when the Mock Airlines search API fails or returns an unexpected response."""
 
 
 class MockAirlinesApiService:
-    """HTTP client for the Mock Airlines single-date flight search API.
-
-    The provider cannot combine two dates in one call, so a round-trip search
-    invokes :meth:`search_flights` twice (outbound, then the swapped route for
-    the return). Configuration (URL, API key, Basic Auth credentials, timeout)
-    is injected via the constructor and defaults to Django settings, mirroring
-    :class:`airport.services.DomesticApiService` so tests can supply fakes.
-    """
+    """HTTP client for the Mock Airlines single-date flight search API."""
 
     def __init__(
         self,
@@ -43,17 +30,7 @@ class MockAirlinesApiService:
         self._timeout = timeout if timeout is not None else settings.FLIGHT_API_TIMEOUT
 
     def search_flights(self, origin: str, destination: str, flight_date: date) -> dict:
-        """Return the raw search payload for one origin/destination/date.
-
-        The payload is a dict with a ``summary`` block and an ``options`` list
-        (possibly empty). The list is validated here so downstream layers can
-        trust its type.
-
-        Raises:
-            MockAirlinesApiError: on any network error, non-2xx status, invalid
-                JSON, a payload that is not a JSON object, or a missing/non-list
-                ``options`` field.
-        """
+        """Return the raw search payload for one origin/destination/date."""
         url = f"{self._base_url}/{self._api_key}/{origin}/{destination}/{flight_date.isoformat()}"
         logger.info("Searching flights %s->%s on %s", origin, destination, flight_date.isoformat())
         started = time.monotonic()
@@ -70,7 +47,7 @@ class MockAirlinesApiService:
             status = exc.response.status_code if exc.response is not None else "n/a"
             logger.error("Flight search request failed (status=%s): %s", status, exc)
             raise MockAirlinesApiError(f"Failed to search flights: {exc}") from exc
-        except ValueError as exc:  # includes JSON decode errors
+        except ValueError as exc:
             logger.error("Flight search returned invalid JSON: %s", exc)
             raise MockAirlinesApiError(f"Invalid JSON from flight search API: {exc}") from exc
 

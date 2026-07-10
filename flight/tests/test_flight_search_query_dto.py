@@ -30,7 +30,6 @@ def test_from_raw_normalizes_iata_and_accepts_date_objects():
 
 
 def test_from_raw_allows_departure_today_and_return_equal_to_departure():
-    # Both boundaries are inclusive: departure == today and return == departure.
     query = FlightSearchQuery.from_raw("GRU", "GIG", TODAY, TODAY, today=TODAY)
 
     assert query.departure_date == TODAY

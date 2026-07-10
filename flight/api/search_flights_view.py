@@ -18,15 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class SearchFlightsView(APIView):
-    """``GET /api/flights/search/`` — round-trip flight search.
-
-    Thin delivery layer: it authenticates the request, validates the query into
-    a DTO, runs :class:`SearchRoundTripUseCase`, and presents the result. It
-    owns no business logic — only HTTP concerns (status codes, response shape).
-
-    ``use_case_factory`` is a class attribute so tests can inject a fake with
-    ``SearchFlightsView.as_view(use_case_factory=...)``.
-    """
+    """``GET /api/flights/search/`` — round-trip flight search."""
 
     authentication_classes = [StaticTokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -34,7 +26,7 @@ class SearchFlightsView(APIView):
 
     def get(self, request):
         serializer = FlightSearchQuerySerializer(data=request.query_params)
-        serializer.is_valid(raise_exception=True)  # -> 400 on invalid input
+        serializer.is_valid(raise_exception=True)
         query = serializer.validated_data["query"]
 
         try:
@@ -49,12 +41,6 @@ class SearchFlightsView(APIView):
             )
 
         return Response(_serialize_result(result), status=status.HTTP_200_OK)
-
-
-# --- Presenters ------------------------------------------------------------
-# Map DTOs onto the JSON response. Per-flight blocks keep the provider's
-# contract names (``fees``, ``range``); the top-level ``price`` is our
-# round-trip aggregation.
 
 
 def _serialize_airport(airport: AirportDTO) -> dict:

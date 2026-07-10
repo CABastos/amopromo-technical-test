@@ -12,21 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 class UnknownAirportError(Exception):
-    """Raised when the origin or destination is not a known active airport.
-
-    The delivery layer maps this to a 400. It is raised before any provider
-    call so an unknown airport never triggers outbound HTTP traffic.
-    """
+    """Raised when the origin or destination is not a known active airport."""
 
 
 @dataclass(frozen=True, slots=True)
 class FlightSearchResult:
-    """Outcome of a round-trip search.
-
-    Carries the resolved endpoint airports (so the presenter can render city/
-    state/coordinates), the route's great-circle distance, the currency, and
-    every outbound x return combination sorted ascending by total price.
-    """
+    """Outcome of a round-trip search."""
 
     origin: AirportDTO
     destination: AirportDTO
@@ -38,13 +29,7 @@ class FlightSearchResult:
 
 
 class SearchRoundTripUseCase:
-    """Orchestrates a round-trip flight search.
-
-    Collaborators are injected so the use case can be unit-tested with fakes and
-    without a database or network: ``repository`` resolves airports, ``service``
-    calls the single-date provider. The use case deals only in DTOs. It is
-    read-only, so unlike the import use case it needs no transaction boundary.
-    """
+    """Orchestrates a round-trip flight search."""
 
     _DEFAULT_CURRENCY = "BRL"
 
@@ -57,13 +42,7 @@ class SearchRoundTripUseCase:
         self._repository = repository if repository is not None else AirportRepository()
 
     def execute(self, query: FlightSearchQuery) -> FlightSearchResult:
-        """Search both legs, enrich and combine them, and return sorted results.
-
-        Raises:
-            UnknownAirportError: if origin or destination is unknown/inactive
-                (before any provider call).
-            MockAirlinesApiError: if either provider call fails.
-        """
+        """Search both legs, enrich and combine them, and return sorted results."""
         airports = self._repository.get_active_by_iatas([query.origin, query.destination])
         missing = [code for code in (query.origin, query.destination) if code not in airports]
         if missing:
@@ -75,8 +54,6 @@ class SearchRoundTripUseCase:
             haversine_km(origin.lat, origin.lon, destination.lat, destination.lon), 2
         )
 
-        # The provider searches a single date, so the return leg is a separate
-        # call with the airports swapped and the return date.
         outbound_payload = self._service.search_flights(
             query.origin, query.destination, query.departure_date
         )

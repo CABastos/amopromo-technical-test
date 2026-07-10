@@ -7,14 +7,7 @@ from flight.helpers import parse_date
 
 @dataclass(frozen=True, slots=True)
 class FlightSearchQuery:
-    """Validated, immutable round-trip search request.
-
-    Built from raw request parameters via :meth:`from_raw`, which is the single
-    source of the search's domain rules (valid IATA codes, distinct endpoints,
-    non-past departure, return on or after departure). The DRF serializer owns
-    request *shape*; this DTO owns request *meaning*, so both the HTTP layer and
-    any other caller validate identically.
-    """
+    """Validated, immutable round-trip search request."""
 
     origin: str
     destination: str
@@ -31,17 +24,7 @@ class FlightSearchQuery:
         *,
         today: date | None = None,
     ) -> "FlightSearchQuery":
-        """Validate and normalize raw parameters into a FlightSearchQuery.
-
-        IATA codes are upper-cased and stripped; dates accept either ``date``
-        objects or ISO ``YYYY-MM-DD`` strings. ``today`` is injectable so the
-        "no past departures" rule is deterministic in tests; it defaults to the
-        current date.
-
-        Raises:
-            ValueError: with a human-readable reason for any invalid field, so
-                the caller can surface a 400 with a clear message.
-        """
+        """Validate and normalize raw parameters into a FlightSearchQuery."""
         today = today if today is not None else date.today()
 
         origin_code = parse_iata(origin, "origin IATA code")
