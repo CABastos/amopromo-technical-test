@@ -59,15 +59,25 @@ class UpsertAirportsUseCase:
         """
         payload = self._service.fetch_airports()
 
-        dtos: list[AirportDTO] = []
+        # Key by the normalized IATA so case-variant keys (e.g. "gru" and "GRU")
+        # collapse to one record. Feeding duplicate conflict keys to a single
+        # INSERT ... ON CONFLICT would otherwise abort the whole import.
+        by_iata: dict[str, AirportDTO] = {}
         skipped = 0
         for code, raw in payload.items():
             try:
-                dtos.append(AirportDTO.from_raw(code, raw))
+                dto = AirportDTO.from_raw(code, raw)
             except ValueError as exc:
                 skipped += 1
                 logger.warning("Skipping airport %s: %s", code, exc)
+                continue
+            if dto.iata in by_iata:
+                logger.warning(
+                    "Duplicate IATA %s (from key %r); keeping the later record", dto.iata, code
+                )
+            by_iata[dto.iata] = dto
 
+        dtos = list(by_iata.values())
         if not dtos:
             raise NoValidAirportsError(
                 "No valid airports in payload; aborting to avoid mass-deactivation"

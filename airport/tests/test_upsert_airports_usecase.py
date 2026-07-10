@@ -85,6 +85,22 @@ def test_execute_skips_invalid_records_but_keeps_valid_ones():
     assert {dto.iata for dto in repository.upsert_calls[0]} == {"GRU"}
 
 
+def test_execute_deduplicates_case_variant_iata_keys_keeping_the_later():
+    # "gru" and "GRU" both normalize to "GRU"; only the later record survives,
+    # so a single conflict key reaches upsert_many (a duplicate would otherwise
+    # abort the INSERT ... ON CONFLICT with a CardinalityViolation).
+    payload = {"gru": _airport(city="First"), "GRU": _airport(city="Second")}
+    service = FakeService(payload=payload)
+    repository = FakeRepository(upsert_result=UpsertResult(created=1, updated=0))
+
+    summary = _make_use_case(service, repository).execute()
+
+    assert summary.skipped == 0
+    upserted = repository.upsert_calls[0]
+    assert [dto.iata for dto in upserted] == ["GRU"]
+    assert upserted[0].city == "Second"
+
+
 @pytest.mark.parametrize(
     "payload",
     [
