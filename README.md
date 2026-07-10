@@ -128,40 +128,6 @@ honest.
 | `401 Unauthorized` | Missing, malformed, or wrong token | `{"detail": "..."}` with a `WWW-Authenticate: Bearer` challenge |
 | `502 Bad Gateway` | The flight provider is unreachable or returns an unexpected response | `{"detail": "Flight provider is unavailable."}` |
 
-### Architecture
-
-The `flight` app mirrors the `airport` app's layered shape, but its entry point
-is an HTTP view instead of a management command and it persists nothing
-(read-only):
-
-```
-SearchFlightsView (DRF APIView / delivery)
-    │  StaticTokenAuthentication + IsAuthenticated
-    │  FlightSearchQuerySerializer → FlightSearchQuery DTO
-    ▼
-SearchRoundTripUseCase (orchestration)
-    ├── AirportRepository.get_active_by_iatas   → airport existence + coordinates
-    ├── haversine_km(...)                        → route distance (once)
-    └── MockAirlinesApiService.search_flights    → provider HTTP (called twice)
-        FlightOptionDTO.from_raw    → per-leg price + meta enrichment
-        RoundTripOptionDTO.combine  → outbound × return aggregation
-```
-
-- **`api/`** — delivery: `StaticTokenAuthentication` (constant-time bearer-token
-  check, fails closed), `FlightSearchQuerySerializer` (shape → delegates the
-  domain rules to the DTO), and `SearchFlightsView` (auth, error mapping, JSON
-  presenters).
-- **`dto/`** — `FlightSearchQuery` (request rules), `FlightOptionDTO` (a
-  validated, enriched leg), `RoundTripOptionDTO` (price aggregation).
-- **`helpers/`** — pure utilities: `haversine_helper` (great-circle distance),
-  `datetime_helper` (ISO date/datetime parsing), and `money_helper` (`to_money`:
-  a `Decimal` quantized to cents, half-up).
-- **`services/mock_airlines_api_service.py`** — provider HTTP client; wraps
-  failures in `MockAirlinesApiError`.
-- **`usecases/search_round_trip_usecase.py`** — orchestration; raises
-  `UnknownAirportError` before any provider call when an airport is unknown, and
-  skips (logs) individual flights that fail enrichment.
-
 ## Stack
 
 - Python 3.13
@@ -171,7 +137,8 @@ SearchRoundTripUseCase (orchestration)
 - `psycopg`, `requests`, `django-environ`
 - `pytest` / `pytest-django`, `ruff`
 
-## Architecture
+### Architecture
+
 
 The `airport` app is organized in layers, each in its own folder with one file
 per component. Dependencies point inward and are passed by constructor
@@ -204,6 +171,39 @@ UpsertAirportsUseCase (orchestration)
   against a broken/empty payload soft-deleting the entire table.
 - **`management/commands/import_airports.py`** — thin wrapper: runs the use
   case, prints the summary, and exits non-zero on failure.
+
+
+The `flight` app mirrors the `airport` app's layered shape, but its entry point
+is an HTTP view instead of a management command and it persists nothing
+(read-only):
+
+```
+SearchFlightsView (DRF APIView / delivery)
+    │  StaticTokenAuthentication + IsAuthenticated
+    │  FlightSearchQuerySerializer → FlightSearchQuery DTO
+    ▼
+SearchRoundTripUseCase (orchestration)
+    ├── AirportRepository.get_active_by_iatas   → airport existence + coordinates
+    ├── haversine_km(...)                        → route distance (once)
+    └── MockAirlinesApiService.search_flights    → provider HTTP (called twice)
+        FlightOptionDTO.from_raw    → per-leg price + meta enrichment
+        RoundTripOptionDTO.combine  → outbound × return aggregation
+```
+
+- **`api/`** — delivery: `StaticTokenAuthentication` (constant-time bearer-token
+  check, fails closed), `FlightSearchQuerySerializer` (shape → delegates the
+  domain rules to the DTO), and `SearchFlightsView` (auth, error mapping, JSON
+  presenters).
+- **`dto/`** — `FlightSearchQuery` (request rules), `FlightOptionDTO` (a
+  validated, enriched leg), `RoundTripOptionDTO` (price aggregation).
+- **`helpers/`** — pure utilities: `haversine_helper` (great-circle distance),
+  `datetime_helper` (ISO date/datetime parsing), and `money_helper` (`to_money`:
+  a `Decimal` quantized to cents, half-up).
+- **`services/mock_airlines_api_service.py`** — provider HTTP client; wraps
+  failures in `MockAirlinesApiError`.
+- **`usecases/search_round_trip_usecase.py`** — orchestration; raises
+  `UnknownAirportError` before any provider call when an airport is unknown, and
+  skips (logs) individual flights that fail enrichment.
 
 ### Project structure
 
