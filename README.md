@@ -99,8 +99,11 @@ aggregate. An empty leg (no flights on a date) is a valid result: `200` with
 ### Enrichment
 
 The provider populates only each flight's `fare`; everything else is computed
-here (all values rounded to two decimals). `distance_km` is the origin↔
-destination great-circle (Haversine) distance, computed once per route:
+here. Monetary values (`fare`/`fees`/`total`) are computed as `Decimal`
+quantized to two decimals (half-up), so cents stay exact; the `meta` metrics are
+floats rounded to two decimals. In the JSON response they render as numbers, so
+the response shape is unchanged. `distance_km` is the origin↔destination
+great-circle (Haversine) distance, computed once per route:
 
 | Field | Formula |
 |---|---|
@@ -122,7 +125,7 @@ honest.
 | Status | When | Body |
 |---|---|---|
 | `400 Bad Request` | Invalid input (bad IATA, same origin/destination, past departure, return before departure, malformed date) or an unknown/inactive airport | `{"<field>": [...]}` or `{"detail": "..."}` |
-| `401 Unauthorized` | Missing or wrong token | `{"detail": "..."}` with a `WWW-Authenticate: Bearer` challenge |
+| `401 Unauthorized` | Missing, malformed, or wrong token | `{"detail": "..."}` with a `WWW-Authenticate: Bearer` challenge |
 | `502 Bad Gateway` | The flight provider is unreachable or returns an unexpected response | `{"detail": "Flight provider is unavailable."}` |
 
 ### Architecture
@@ -150,7 +153,9 @@ SearchRoundTripUseCase (orchestration)
   presenters).
 - **`dto/`** — `FlightSearchQuery` (request rules), `FlightOptionDTO` (a
   validated, enriched leg), `RoundTripOptionDTO` (price aggregation).
-- **`helpers/haversine_helper.py`** — pure great-circle distance.
+- **`helpers/`** — pure utilities: `haversine_helper` (great-circle distance),
+  `datetime_helper` (ISO date/datetime parsing), and `money_helper` (`to_money`:
+  a `Decimal` quantized to cents, half-up).
 - **`services/mock_airlines_api_service.py`** — provider HTTP client; wraps
   failures in `MockAirlinesApiError`.
 - **`usecases/search_round_trip_usecase.py`** — orchestration; raises
@@ -185,12 +190,16 @@ UpsertAirportsUseCase (orchestration)
 - **`services/domestic_api_service.py`** — HTTP client for the external API
   (Basic Auth, timeout, `raise_for_status`); wraps failures in `DomesticApiError`.
 - **`dto/airport_dto.py`** — `AirportDTO`, an immutable value object.
-  `AirportDTO.from_raw()` owns validation/normalization of a raw record.
+  `AirportDTO.from_raw()` owns validation/normalization of a raw record, using
+  the shared `helpers/iata_helper.py` (`parse_iata`) that the flight query DTO
+  reuses.
 - **`repositories/airport_repository.py`** — the only code that touches the ORM.
   `upsert_many()` performs a single `INSERT ... ON CONFLICT DO UPDATE`;
   `deactivate_missing()` soft-deletes airports absent from the payload.
 - **`usecases/upsert_airports_usecase.py`** — fetches, validates (skipping
   invalid records), and persists inside one transaction; returns a summary.
+  Records are keyed by normalized IATA, so duplicate or case-variant keys
+  collapse to a single row (last one wins) rather than aborting the upsert.
   Aborts via `NoValidAirportsError` if **zero** records are valid, which guards
   against a broken/empty payload soft-deleting the entire table.
 - **`management/commands/import_airports.py`** — thin wrapper: runs the use
@@ -211,6 +220,7 @@ amopromo-technical-test/
 │   ├── migrations/
 │   ├── models/                # Airport ORM model
 │   ├── dto/                   # AirportDTO + validation
+│   ├── helpers/               # parse_iata (shared IATA validation)
 │   ├── services/              # DomesticApiService (HTTP)
 │   ├── repositories/          # AirportRepository (persistence)
 │   ├── usecases/              # UpsertAirportsUseCase (orchestration)
@@ -219,7 +229,7 @@ amopromo-technical-test/
 ├── flight/                    # Problem 2 — read-only, no models
 │   ├── api/                   # auth, serializer, view (DRF delivery)
 │   ├── dto/                   # query, enriched leg, round-trip aggregation
-│   ├── helpers/               # haversine distance
+│   ├── helpers/               # haversine, date parsing, money
 │   ├── services/              # MockAirlinesApiService (HTTP)
 │   ├── usecases/              # SearchRoundTripUseCase (orchestration)
 │   └── tests/                 # DTO, helper, and use case unit tests
