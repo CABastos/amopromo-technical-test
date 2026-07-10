@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 
 import pytest
 
@@ -43,7 +44,7 @@ def test_fee_uses_forty_floor_when_ten_percent_is_smaller():
     dto = FlightOptionDTO.from_raw(_raw(fare=218.66), distance_km=300.0)
 
     assert dto.fee == 40.0
-    assert dto.total == round(218.66 + 40.0, 2)
+    assert dto.total == Decimal("258.66")
 
 
 def test_fee_at_boundary_equals_ten_percent():

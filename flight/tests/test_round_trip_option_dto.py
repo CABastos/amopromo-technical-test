@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from flight.dto import FlightOptionDTO, RoundTripOptionDTO
 
 
@@ -47,6 +49,6 @@ def test_combine_rounds_to_two_decimals():
 
     rt = RoundTripOptionDTO.combine(outbound, inbound)
 
-    assert rt.fare == 300.30
+    assert rt.fare == Decimal("300.30")
     assert rt.fee == 80.0
-    assert rt.total == 380.30
+    assert rt.total == Decimal("380.30")

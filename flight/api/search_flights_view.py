@@ -1,10 +1,13 @@
 import logging
+from decimal import Decimal
 
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from airport.dto import AirportDTO
+from flight.dto import FlightOptionDTO, RoundTripOptionDTO
 from flight.services import MockAirlinesApiError
 from flight.usecases import FlightSearchResult, SearchRoundTripUseCase, UnknownAirportError
 
@@ -54,7 +57,7 @@ class SearchFlightsView(APIView):
 # round-trip aggregation.
 
 
-def _serialize_airport(airport) -> dict:
+def _serialize_airport(airport: AirportDTO) -> dict:
     return {
         "iata": airport.iata,
         "city": airport.city,
@@ -64,11 +67,11 @@ def _serialize_airport(airport) -> dict:
     }
 
 
-def _serialize_price(fare: float, fee: float, total: float) -> dict:
+def _serialize_price(fare: Decimal, fee: Decimal, total: Decimal) -> dict:
     return {"fare": fare, "fees": fee, "total": total}
 
 
-def _serialize_flight(option) -> dict:
+def _serialize_flight(option: FlightOptionDTO) -> dict:
     return {
         "departure_time": option.departure_time.isoformat(),
         "arrival_time": option.arrival_time.isoformat(),
@@ -85,7 +88,7 @@ def _serialize_flight(option) -> dict:
     }
 
 
-def _serialize_round_trip(round_trip) -> dict:
+def _serialize_round_trip(round_trip: RoundTripOptionDTO) -> dict:
     return {
         "price": _serialize_price(round_trip.fare, round_trip.fee, round_trip.total),
         "outbound": _serialize_flight(round_trip.outbound),

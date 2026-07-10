@@ -1,12 +1,13 @@
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal
 
-from flight.helpers import parse_datetime
+from flight.helpers import parse_datetime, to_money
 
 # The provider populates only ``fare``; the fee (and everything derived from it)
 # is ours to compute. A booking fee is 10% of the fare with a R$40 floor.
-_FEE_RATE = 0.10
-_MIN_FEE = 40.0
+_FEE_RATE = Decimal("0.10")
+_MIN_FEE = Decimal("40.00")
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,9 +23,9 @@ class FlightOptionDTO:
 
     departure_time: datetime
     arrival_time: datetime
-    fare: float
-    fee: float
-    total: float
+    fare: Decimal
+    fee: Decimal
+    total: Decimal
     aircraft_model: str
     aircraft_manufacturer: str
     range_km: float
@@ -57,8 +58,8 @@ class FlightOptionDTO:
             raise ValueError("arrival_time must be after departure_time")
 
         try:
-            fare = float(raw["price"]["fare"])
-        except (KeyError, TypeError, ValueError) as exc:
+            fare = to_money(raw["price"]["fare"])
+        except (KeyError, TypeError, ValueError, ArithmeticError) as exc:
             raise ValueError(f"missing or invalid fare: {exc}") from exc
         if fare <= 0:
             raise ValueError(f"fare must be positive, got {fare}")
@@ -75,12 +76,12 @@ class FlightOptionDTO:
         return cls(
             departure_time=departure,
             arrival_time=arrival,
-            fare=round(fare, 2),
-            fee=round(fee, 2),
-            total=round(fare + fee, 2),
+            fare=fare,
+            fee=to_money(fee),
+            total=to_money(fare + fee),
             aircraft_model=model,
             aircraft_manufacturer=manufacturer,
             range_km=round(distance_km, 2),
             cruise_speed_kmh=round(distance_km / duration_hours, 2),
-            cost_per_km=round(fare / distance_km, 2),
+            cost_per_km=round(float(fare) / distance_km, 2),
         )

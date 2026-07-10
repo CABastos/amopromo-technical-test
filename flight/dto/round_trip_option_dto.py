@@ -1,4 +1,7 @@
 from dataclasses import dataclass
+from decimal import Decimal
+
+from flight.helpers import to_money
 
 from .flight_option_dto import FlightOptionDTO
 
@@ -16,9 +19,9 @@ class RoundTripOptionDTO:
 
     outbound: FlightOptionDTO
     inbound: FlightOptionDTO
-    fare: float
-    fee: float
-    total: float
+    fare: Decimal
+    fee: Decimal
+    total: Decimal
 
     @classmethod
     def combine(cls, outbound: FlightOptionDTO, inbound: FlightOptionDTO) -> "RoundTripOptionDTO":
@@ -30,7 +33,7 @@ class RoundTripOptionDTO:
         return cls(
             outbound=outbound,
             inbound=inbound,
-            fare=round(outbound.fare + inbound.fare, 2),
-            fee=round(outbound.fee + inbound.fee, 2),
-            total=round(outbound.total + inbound.total, 2),
+            fare=to_money(outbound.fare + inbound.fare),
+            fee=to_money(outbound.fee + inbound.fee),
+            total=to_money(outbound.total + inbound.total),
         )
