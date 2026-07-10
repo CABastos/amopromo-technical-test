@@ -43,6 +43,9 @@ class StaticTokenAuthentication(authentication.BaseAuthentication):
             return None
 
         parts = header.split()
+        if not parts:
+            # A present-but-whitespace-only header carries no credential.
+            return None
         if parts[0].lower() != self.keyword.encode().lower():
             return None
         if len(parts) != 2:
