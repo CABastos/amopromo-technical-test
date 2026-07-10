@@ -4,12 +4,7 @@ from applog.repositories import AppLogRepository
 
 
 class Command(BaseCommand):
-    """Delete stored application log entries older than N days.
-
-    Thin wrapper around AppLogRepository.purge_older_than: it owns no logic
-    beyond validating the argument and reporting the deleted count, so it is
-    safe to run from cron for log retention.
-    """
+    """Delete stored application log entries older than N days."""
 
     help = "Delete stored application log entries older than N days."
 

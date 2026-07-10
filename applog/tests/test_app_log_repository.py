@@ -43,7 +43,7 @@ def test_create_entry_truncates_oversized_char_fields():
     entry = AppLogEntry.objects.get()
     assert len(entry.logger_name) == 255
     assert len(entry.func_name) == 255
-    assert entry.level_name == "INFORMATIO"  # truncated to the 10-char column
+    assert entry.level_name == "INFORMATIO"
 
 
 @pytest.mark.django_db
@@ -52,8 +52,6 @@ def test_purge_older_than_deletes_only_old_rows():
     repo.create_entry(logger_name="a", level=20, level_name="INFO", message="old")
     repo.create_entry(logger_name="b", level=20, level_name="INFO", message="new")
 
-    # auto_now_add ignores constructor values, so backdate the column directly
-    # to push the first row beyond the retention cutoff.
     old = AppLogEntry.objects.get(message="old")
     AppLogEntry.objects.filter(pk=old.pk).update(created_at=timezone.now() - timedelta(days=40))
 

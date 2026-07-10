@@ -4,20 +4,13 @@ from django.utils import timezone
 
 from applog.models import AppLogEntry
 
-# NOTE: this module deliberately has no ``logging.getLogger`` and never logs.
-# It sits on the write path of the log handler, so any log call here could feed
-# back into that handler and recurse. Keeping it silent is defense-in-depth on
-# top of the handler only being attached to the ``airport``/``flight`` loggers.
-
 _MAX_LOGGER_NAME = 255
 _MAX_FUNC_NAME = 255
 _MAX_LEVEL_NAME = 10
 
 
 class AppLogRepository:
-    """Persistence for AppLogEntry rows. This is the only layer that touches the
-    ORM for stored log records; the handler above it passes plain values.
-    """
+    """Persistence for AppLogEntry rows."""
 
     def create_entry(
         self,
@@ -30,12 +23,7 @@ class AppLogRepository:
         lineno: int = 0,
         traceback: str = "",
     ) -> None:
-        """Insert a single log entry.
-
-        Char fields are truncated to their column limits so an oversized logger
-        or function name degrades to a shorter value rather than raising a
-        ``DataError`` that the handler would have to swallow (losing the row).
-        """
+        """Insert a single log entry."""
         AppLogEntry.objects.create(
             logger_name=logger_name[:_MAX_LOGGER_NAME],
             level=level,
@@ -47,7 +35,7 @@ class AppLogRepository:
         )
 
     def purge_older_than(self, days: int) -> int:
-        """Delete entries older than ``days`` days. Returns the number deleted."""
+        """Delete entries older than the given number of days."""
         cutoff = timezone.now() - timedelta(days=days)
         deleted, _ = AppLogEntry.objects.filter(created_at__lt=cutoff).delete()
         return deleted

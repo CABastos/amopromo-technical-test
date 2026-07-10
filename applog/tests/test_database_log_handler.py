@@ -20,11 +20,7 @@ class FakeAppLogRepository:
 
 @pytest.fixture
 def make_logger():
-    """Yield a factory for an isolated logger wired to a single handler.
-
-    The logger has propagation off so records never reach the root console
-    handler (or the real db_log handler), keeping each test self-contained.
-    """
+    """Yield a factory for an isolated logger wired to a single handler."""
     created = []
 
     def _make(handler, name="airport.tests.handler"):
@@ -91,7 +87,6 @@ def test_emit_swallows_repository_errors(make_logger):
     handler.handleError = lambda record: handled.append(record)
     logger = make_logger(handler)
 
-    # A failing repository must never propagate out of the logging call.
     logger.error("this should not blow up")
 
     assert len(handled) == 1

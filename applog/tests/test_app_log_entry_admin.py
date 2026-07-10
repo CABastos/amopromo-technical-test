@@ -33,7 +33,6 @@ def test_admin_list_configuration():
 
 def test_short_message_truncates_to_120_chars():
     model_admin = admin.site._registry[AppLogEntry]
-    # No DB write needed — the display method reads the in-memory instance.
     entry = AppLogEntry(message="x" * 200)
 
     assert model_admin.short_message(entry) == "x" * 120
