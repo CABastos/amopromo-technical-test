@@ -14,7 +14,6 @@ def test_from_raw_builds_dto_from_valid_record():
 
 
 def test_from_raw_normalizes_values():
-    # lowercase key/state upper-cased, city stripped, string coordinates coerced.
     dto = AirportDTO.from_raw(
         "gru", _raw(city="  Sao Paulo  ", state="sp", lat="-23.4", lon="-46.4")
     )

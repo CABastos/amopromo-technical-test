@@ -8,22 +8,11 @@ logger = logging.getLogger(__name__)
 
 
 class DomesticApiError(Exception):
-    """Raised when the external airports API cannot be reached or returns an
-    unexpected response.
-
-    Callers depend on this domain exception rather than on ``requests``
-    internals, keeping the HTTP library an implementation detail of this layer.
-    """
+    """Raised when the external airports API fails or returns an unexpected response."""
 
 
 class DomesticApiService:
-    """HTTP client for the external (domestic) airports API.
-
-    Fetches the full airport catalogue as a JSON object keyed by IATA code.
-    Configuration (URL, API key, Basic Auth credentials, timeout) is injected
-    via the constructor and defaults to Django settings, so tests can supply
-    fakes and Problem 2's search-API client can reuse this shape.
-    """
+    """HTTP client for the external (domestic) airports API."""
 
     def __init__(
         self,
@@ -40,12 +29,7 @@ class DomesticApiService:
         self._timeout = timeout if timeout is not None else settings.AIRPORT_API_TIMEOUT
 
     def fetch_airports(self) -> dict:
-        """Return the raw airports payload as a dict keyed by IATA code.
-
-        Raises:
-            DomesticApiError: on any network error, non-2xx status, invalid
-                JSON, or a payload that is not a JSON object.
-        """
+        """Return the raw airports payload as a dict keyed by IATA code."""
         url = f"{self._base_url}/{self._api_key}"
         logger.info("Fetching airports from domestic API")
         started = time.monotonic()
@@ -62,7 +46,7 @@ class DomesticApiService:
             status = exc.response.status_code if exc.response is not None else "n/a"
             logger.error("Domestic API request failed (status=%s): %s", status, exc)
             raise DomesticApiError(f"Failed to fetch airports: {exc}") from exc
-        except ValueError as exc:  # includes JSON decode errors
+        except ValueError as exc:
             logger.error("Domestic API returned invalid JSON: %s", exc)
             raise DomesticApiError(f"Invalid JSON from airports API: {exc}") from exc
 

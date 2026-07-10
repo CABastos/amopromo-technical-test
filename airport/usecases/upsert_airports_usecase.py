@@ -13,11 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class NoValidAirportsError(Exception):
-    """Raised when a fetched payload yields zero valid airports.
-
-    Aborting here prevents an empty or structurally changed payload from
-    soft-deleting every airport in the database.
-    """
+    """Raised when a fetched payload yields zero valid airports."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,14 +27,7 @@ class ImportSummary:
 
 
 class UpsertAirportsUseCase:
-    """Orchestrates a full airport import.
-
-    Collaborators are injected so the use case can be unit-tested with fakes and
-    without a database: ``service`` fetches the payload, ``repository`` persists,
-    and ``atomic`` provides the transaction boundary (defaults to
-    ``transaction.atomic``; tests pass ``contextlib.nullcontext``). The use case
-    itself deals only in DTOs and never touches the ORM directly.
-    """
+    """Orchestrates a full airport import."""
 
     def __init__(
         self,
@@ -51,17 +40,9 @@ class UpsertAirportsUseCase:
         self._atomic = atomic if atomic is not None else transaction.atomic
 
     def execute(self) -> ImportSummary:
-        """Fetch, validate, and persist airports; return a summary of counts.
-
-        Raises:
-            DomesticApiError: if the fetch fails (the database is left untouched).
-            NoValidAirportsError: if no record survives validation.
-        """
+        """Fetch, validate, and persist airports; return a summary of counts."""
         payload = self._service.fetch_airports()
 
-        # Key by the normalized IATA so case-variant keys (e.g. "gru" and "GRU")
-        # collapse to one record. Feeding duplicate conflict keys to a single
-        # INSERT ... ON CONFLICT would otherwise abort the whole import.
         by_iata: dict[str, AirportDTO] = {}
         skipped = 0
         for code, raw in payload.items():

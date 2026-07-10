@@ -12,7 +12,7 @@ from airport.usecases import (
 
 
 class FakeService:
-    """Stand-in for DomesticApiService: returns a preset payload or raises."""
+    """Stand-in for DomesticApiService."""
 
     def __init__(self, payload=None, error=None):
         self._payload = payload if payload is not None else {}
@@ -27,7 +27,7 @@ class FakeService:
 
 
 class FakeRepository:
-    """Stand-in for AirportRepository: records calls, returns preset counts."""
+    """Stand-in for AirportRepository."""
 
     def __init__(self, upsert_result=None, deactivated=0):
         self._upsert_result = upsert_result if upsert_result is not None else UpsertResult(0, 0)
@@ -49,7 +49,6 @@ def _airport(iata="GRU", city="Sao Paulo", state="SP", lat=-23.4, lon=-46.4):
 
 
 def _make_use_case(service, repository):
-    # Inject nullcontext so the transaction boundary never touches a database.
     return UpsertAirportsUseCase(service=service, repository=repository, atomic=nullcontext)
 
 
@@ -61,20 +60,18 @@ def test_execute_happy_path_returns_summary_and_persists():
     summary = _make_use_case(service, repository).execute()
 
     assert summary == ImportSummary(created=1, updated=1, deactivated=3, skipped=0)
-    # Both valid records were mapped to DTOs and upserted exactly once.
     assert len(repository.upsert_calls) == 1
     assert {dto.iata for dto in repository.upsert_calls[0]} == {"GRU", "GIG"}
-    # deactivate_missing was told which airports to keep active.
     assert set(repository.deactivate_calls[0]) == {"GRU", "GIG"}
 
 
 def test_execute_skips_invalid_records_but_keeps_valid_ones():
     payload = {
         "GRU": _airport("GRU"),
-        "XX": _airport(city="BadIata"),  # key is not 3 letters
-        "ZZZ": _airport("ZZZ", lat=999.0),  # latitude out of range
-        "QQQ": _airport("QQQ", city=""),  # empty city
-        "WWW": _airport("WWW", state="Sao Paulo"),  # state not 2 chars
+        "XX": _airport(city="BadIata"),
+        "ZZZ": _airport("ZZZ", lat=999.0),
+        "QQQ": _airport("QQQ", city=""),
+        "WWW": _airport("WWW", state="Sao Paulo"),
     }
     service = FakeService(payload=payload)
     repository = FakeRepository(upsert_result=UpsertResult(created=1, updated=0))
@@ -86,9 +83,6 @@ def test_execute_skips_invalid_records_but_keeps_valid_ones():
 
 
 def test_execute_deduplicates_case_variant_iata_keys_keeping_the_later():
-    # "gru" and "GRU" both normalize to "GRU"; only the later record survives,
-    # so a single conflict key reaches upsert_many (a duplicate would otherwise
-    # abort the INSERT ... ON CONFLICT with a CardinalityViolation).
     payload = {"gru": _airport(city="First"), "GRU": _airport(city="Second")}
     service = FakeService(payload=payload)
     repository = FakeRepository(upsert_result=UpsertResult(created=1, updated=0))

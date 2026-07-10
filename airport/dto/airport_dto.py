@@ -8,13 +8,7 @@ _LON_RANGE = (-180.0, 180.0)
 
 @dataclass(frozen=True, slots=True)
 class AirportDTO:
-    """Validated, immutable airport record exchanged between layers.
-
-    Built from a raw API record via :meth:`from_raw`, which owns the definition
-    of a valid airport, and consumed by the repository for persistence. Being
-    frozen keeps it a safe value object; the repository maps it onto the Airport
-    ORM model.
-    """
+    """Validated, immutable airport value object."""
 
     iata: str
     city: str
@@ -24,15 +18,7 @@ class AirportDTO:
 
     @classmethod
     def from_raw(cls, code: str, raw: object) -> "AirportDTO":
-        """Validate and normalize a single raw record into an AirportDTO.
-
-        The dict key is the authoritative IATA code. Values are normalized
-        (IATA/state upper-cased, city stripped, coordinates coerced to float).
-
-        Raises:
-            ValueError: with a human-readable reason for any invalid or missing
-                field, so callers can skip the record and log why.
-        """
+        """Validate and normalize a single raw record into an AirportDTO."""
         iata = parse_iata(code)
 
         if not isinstance(raw, dict):

@@ -5,12 +5,7 @@ from airport.usecases import NoValidAirportsError, UpsertAirportsUseCase
 
 
 class Command(BaseCommand):
-    """Import airports from the external API into the local database.
-
-    Thin wrapper around UpsertAirportsUseCase: it owns no business logic, only
-    translating the use case's outcome into console output and a process exit
-    code (CommandError -> non-zero exit) so the command is cron-friendly.
-    """
+    """Import airports from the external API into the local database."""
 
     help = "Import airports from the external API into the local database."
 
